@@ -26,6 +26,33 @@ export default function ClassDashboard(){
     });
   },[yearId]);
 
+  const downloadClassZip = async () => {
+    if (!classroomId || !termId) {
+      return alert("Sélectionne la classe et le trimestre d'abord.");
+    }
+    try {
+      const resp = await api.get("/api/reports/pdf/class/", {
+        params: { classroom: classroomId, term: termId },
+        responseType: "blob",
+      });
+      let filename = `class_${classroomId}_T${termId}.zip`;
+      const cd = resp.headers["content-disposition"];
+      if (cd) {
+        const m = /filename="([^"]+)"/.exec(cd);
+        if (m) filename = m[1];
+      }
+      const blob = new Blob([resp.data], { type: "application/zip" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click();
+      URL.revokeObjectURL(url); a.remove();
+    } catch (e) {
+      console.error(e);
+      alert("Échec du téléchargement du ZIP de classe.");
+    }
+  };
+
   const loadStats = async () => {
     if(!classroomId || !termId) return;
     setLoading(true);
@@ -54,6 +81,11 @@ export default function ClassDashboard(){
           {terms.map(t=> <option key={t.id} value={t.id}>Term {t.index}</option>)}
         </select>
         <button className="px-3 py-2 rounded border" onClick={loadStats} disabled={loading}>Refresh</button>
+        {classroomId && termId && (
+          <button className="px-3 py-2 rounded border" onClick={downloadClassZip}>
+            Export Class (ZIP)
+          </button>
+        )}
       </div>
 
       {!data ? (
