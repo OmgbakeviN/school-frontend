@@ -1,16 +1,30 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import api from "../../lib/api";
 import axios from "axios";
 
-const api = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL });
+const baseURL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 
 export const login = createAsyncThunk("auth/login", async ({ username, password }) => {
-  const { data } = await api.post("/api/auth/login/", { username, password });
+  // Utilise axios nu (pas l'instance api) pour éviter 401->refresh sur /login
+  const { data } = await axios.post(`${baseURL}/api/auth/login/`, { username, password });
   localStorage.setItem("access", data.access);
   localStorage.setItem("refresh", data.refresh);
   return data;
 });
 
-const initialState = { access: localStorage.getItem("access") || null, refresh: localStorage.getItem("refresh") || null, user: null, status: "idle", error: null };
+export const getMe = createAsyncThunk("auth/getMe", async () => {
+  const { data } = await api.get("/api/me/");
+  return data; // { id, username, role, ... }
+});
+
+const initialState = {
+  access: localStorage.getItem("access") || null,
+  refresh: localStorage.getItem("refresh") || null,
+  user: null,
+  status: "idle",
+  userStatus: "idle",
+  error: null,
+};
 
 const authSlice = createSlice({
   name: "auth",
@@ -23,15 +37,21 @@ const authSlice = createSlice({
       localStorage.removeItem("access");
       localStorage.removeItem("refresh");
     },
-    setUser(state, action) { state.user = action.payload; }
   },
-  extraReducers: builder => {
-    builder
-      .addCase(login.pending, state => { state.status = "loading"; })
-      .addCase(login.fulfilled, (state, action) => { state.status = "succeeded"; state.access = action.payload.access; state.refresh = action.payload.refresh; })
-      .addCase(login.rejected, (state, action) => { state.status = "failed"; state.error = action.error.message; });
-  }
+  extraReducers: (b) => {
+    b.addCase(login.pending, (s) => { s.status = "loading"; s.error = null; })
+     .addCase(login.fulfilled, (s, a) => {
+        s.status = "succeeded";
+        s.access = a.payload.access;
+        s.refresh = a.payload.refresh;
+     })
+     .addCase(login.rejected, (s, a) => { s.status = "failed"; s.error = a.error.message || "Login failed"; })
+
+     .addCase(getMe.pending, (s) => { s.userStatus = "loading"; })
+     .addCase(getMe.fulfilled, (s, a) => { s.userStatus = "succeeded"; s.user = a.payload; })
+     .addCase(getMe.rejected, (s) => { s.userStatus = "failed"; s.user = null; });
+  },
 });
 
-export const { logout, setUser } = authSlice.actions;
+export const { logout } = authSlice.actions;
 export default authSlice.reducer;
