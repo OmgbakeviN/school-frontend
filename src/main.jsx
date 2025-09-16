@@ -17,6 +17,8 @@ import EnrollmentSubjects from "./pages/registrar/EnrollmentSubjects";
 import TeacherHome from "./pages/teacher/TeacherHome";
 import MyAssignments from "./pages/teacher/MyAssignments";
 import GradeEditor from "./pages/teacher/GradeEditor";
+import PrincipalHome from "./pages/principal/PrincipalHome";
+import ClassDashboard from "./pages/principal/ClassDashboard";
 
 const router = createBrowserRouter([
   { path: "/", element: <LoginPage /> },
@@ -39,6 +41,13 @@ const router = createBrowserRouter([
     children: [
       { path: "assignments", element: <MyAssignments/> },
       { path: "grade", element: <GradeEditor/> },
+    ]
+  },
+  {
+    path: "/principal",
+    element: <Protected roles={["PRINCIPAL","ADMIN"]}><PrincipalHome/></Protected>,
+    children: [
+      { path: "class-stats", element: <ClassDashboard/> },
     ]
   }
 ]);
