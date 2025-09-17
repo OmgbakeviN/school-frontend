@@ -124,6 +124,25 @@ export default function EnrollmentSubjects() {
         <button className="px-3 py-2 rounded border" onClick={downloadStudentPdf}>
           Export PDF (élève)
         </button>
+        <button
+          className="px-3 py-2 rounded border"
+          onClick={async () => {
+            try {
+              const resp = await api.get("/api/reports/pdf/annual/student/", {
+                params: { enrollment: enrollmentId },
+                responseType: "blob",
+              });
+              let filename = `student_${enrollmentId}_ANNUAL.pdf`;
+              const cd = resp.headers["content-disposition"];
+              if (cd) { const m = /filename="([^"]+)"/.exec(cd); if (m) filename = m[1]; }
+              const url = URL.createObjectURL(new Blob([resp.data], { type: "application/pdf" }));
+              const a = document.createElement("a"); a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+              URL.revokeObjectURL(url); a.remove();
+            } catch { alert("Annual PDF failed"); }
+          }}
+        >
+          Export Annual PDF
+        </button>
       </div>
 
 

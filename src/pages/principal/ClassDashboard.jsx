@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import api from "../../lib/api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
-export default function ClassDashboard(){
+export default function ClassDashboard() {
   const [years, setYears] = useState([]);
   const [classes, setClasses] = useState([]);
   const [terms, setTerms] = useState([]);
@@ -15,16 +15,16 @@ export default function ClassDashboard(){
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(()=>{ api.get("/api/core/years/").then(r=>setYears(r.data)); },[]);
-  useEffect(()=>{
-    if(!yearId){ setClasses([]); setTerms([]); setClassroomId(null); setTermId(null); return; }
+  useEffect(() => { api.get("/api/core/years/").then(r => setYears(r.data)); }, []);
+  useEffect(() => {
+    if (!yearId) { setClasses([]); setTerms([]); setClassroomId(null); setTermId(null); return; }
     Promise.all([
-      api.get("/api/core/classes/", { params: { year: yearId }}),
-      api.get("/api/core/terms/", { params: { year: yearId }})
-    ]).then(([C,T])=>{
-      setClasses(C.data); setTerms(T.data.sort((a,b)=>a.index-b.index));
+      api.get("/api/core/classes/", { params: { year: yearId } }),
+      api.get("/api/core/terms/", { params: { year: yearId } })
+    ]).then(([C, T]) => {
+      setClasses(C.data); setTerms(T.data.sort((a, b) => a.index - b.index));
     });
-  },[yearId]);
+  }, [yearId]);
 
   const downloadClassZip = async () => {
     if (!classroomId || !termId) {
@@ -54,31 +54,31 @@ export default function ClassDashboard(){
   };
 
   const loadStats = async () => {
-    if(!classroomId || !termId) return;
+    if (!classroomId || !termId) return;
     setLoading(true);
-    try{
-      const { data } = await api.get(`/api/analytics/classes/${classroomId}/stats/`, { params: { term: termId, pass_mark: 50 }});
+    try {
+      const { data } = await api.get(`/api/analytics/classes/${classroomId}/stats/`, { params: { term: termId, pass_mark: 50 } });
       setData(data);
     } finally { setLoading(false); }
   };
-  useEffect(()=>{ loadStats(); /* eslint-disable-next-line */ },[classroomId, termId]);
+  useEffect(() => { loadStats(); /* eslint-disable-next-line */ }, [classroomId, termId]);
 
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Class statistics</h2>
 
       <div className="grid gap-3 md:grid-cols-4">
-        <select className="border p-2 rounded" value={yearId||""} onChange={e=>setYearId(Number(e.target.value)||null)}>
+        <select className="border p-2 rounded" value={yearId || ""} onChange={e => setYearId(Number(e.target.value) || null)}>
           <option value="">Year...</option>
-          {years.map(y=> <option key={y.id} value={y.id}>{y.name}</option>)}
+          {years.map(y => <option key={y.id} value={y.id}>{y.name}</option>)}
         </select>
-        <select className="border p-2 rounded" value={classroomId||""} onChange={e=>setClassroomId(Number(e.target.value)||null)}>
+        <select className="border p-2 rounded" value={classroomId || ""} onChange={e => setClassroomId(Number(e.target.value) || null)}>
           <option value="">Classroom...</option>
-          {classes.map(c=> <option key={c.id} value={c.id}>{c.name}</option>)}
+          {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
-        <select className="border p-2 rounded" value={termId||""} onChange={e=>setTermId(Number(e.target.value)||null)}>
+        <select className="border p-2 rounded" value={termId || ""} onChange={e => setTermId(Number(e.target.value) || null)}>
           <option value="">Term...</option>
-          {terms.map(t=> <option key={t.id} value={t.id}>Term {t.index}</option>)}
+          {terms.map(t => <option key={t.id} value={t.id}>Term {t.index}</option>)}
         </select>
         <button className="px-3 py-2 rounded border" onClick={loadStats} disabled={loading}>Refresh</button>
         {classroomId && termId && (
@@ -86,6 +86,29 @@ export default function ClassDashboard(){
             Export Class (ZIP)
           </button>
         )}
+
+        {classroomId && (
+          <button
+            className="px-3 py-2 rounded border"
+            onClick={async () => {
+              try {
+                const resp = await api.get("/api/reports/pdf/annual/class/", {
+                  params: { classroom: classroomId },
+                  responseType: "blob",
+                });
+                let filename = `class_${classroomId}_ANNUAL.zip`;
+                const cd = resp.headers["content-disposition"];
+                if (cd) { const m = /filename="([^"]+)"/.exec(cd); if (m) filename = m[1]; }
+                const url = URL.createObjectURL(new Blob([resp.data], { type: "application/zip" }));
+                const a = document.createElement("a"); a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+                URL.revokeObjectURL(url); a.remove();
+              } catch { alert("Annual ZIP failed"); }
+            }}
+          >
+            Export Annual (ZIP)
+          </button>
+        )}
+
       </div>
 
       {!data ? (
@@ -136,7 +159,7 @@ export default function ClassDashboard(){
                 <th className="p-2 text-right">Average</th>
               </tr></thead>
               <tbody>
-                {data.top_students.map((s,i)=>(
+                {data.top_students.map((s, i) => (
                   <tr key={i} className="border-t">
                     <td className="p-2">{s.student_name}</td>
                     <td className="p-2 text-center">{s.matricule}</td>
@@ -157,7 +180,7 @@ export default function ClassDashboard(){
                 <th className="p-2 text-right">Average</th>
               </tr></thead>
               <tbody>
-                {data.students.map(s=>(
+                {data.students.map(s => (
                   <tr key={s.enrollment_id} className="border-t">
                     <td className="p-2">{s.student_name}</td>
                     <td className="p-2 text-center">{s.matricule}</td>
@@ -173,7 +196,7 @@ export default function ClassDashboard(){
   );
 }
 
-function KPI({ title, value }){
+function KPI({ title, value }) {
   return (
     <div className="border rounded p-4">
       <div className="text-sm text-gray-500">{title}</div>
@@ -181,7 +204,7 @@ function KPI({ title, value }){
     </div>
   );
 }
-function Card({ title, children }){
+function Card({ title, children }) {
   return (
     <div className="border rounded">
       <div className="p-2 bg-gray-50 font-semibold">{title}</div>
