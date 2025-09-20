@@ -14,6 +14,8 @@ import Classes from "./pages/registrar/Classes";
 import Students from "./pages/registrar/Students";
 import Enrollments from "./pages/registrar/Enrollments";
 import EnrollmentSubjects from "./pages/registrar/EnrollmentSubjects";
+import RegistrarTeacherCreate from "./pages/registrar/RegistrarTeacherCreate.jsx";
+import RegistrarTeachers from "./pages/teacher/RegistrarTeachers";
 import TeacherHome from "./pages/teacher/TeacherHome";
 import MyAssignments from "./pages/teacher/MyAssignments";
 import GradeEditor from "./pages/teacher/GradeEditor";
@@ -33,6 +35,8 @@ const router = createBrowserRouter([
       { path: "students", element: <Students/> },
       { path: "enrollments", element: <Enrollments/> },
       { path: "enrollment-subjects", element: <EnrollmentSubjects/> },
+      { path: "teachers/new", element: <RegistrarTeacherCreate/> },
+      { path: "teachers", element: <RegistrarTeachers/> },
     ]
   },
   {

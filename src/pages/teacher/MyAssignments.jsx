@@ -17,19 +17,24 @@ export default function MyAssignments(){
           <th className="p-2 text-center">Action</th>
         </tr></thead>
         <tbody>
-          {list.map(a=>(
+          {list.map(a=>{
+            // IDs robustes
+            const classSubjectId = a.class_subject_id ?? a.class_subject ?? a.classSubjectId;
+            const classroomId = a.classroom_id ?? a.classroomId ?? a.class_subject_classroom_id;
+            return (
             <tr key={a.id} className="border-t">
               <td className="p-2">{a.classroom_name}</td>
               <td className="p-2">{a.subject_code} — {a.subject_name}</td>
               <td className="p-2 text-center">{a.can_edit ? "Yes" : "No"}</td>
               <td className="p-2 text-center">
-                <Link className="px-2 py-1 rounded border"
-                      to={`/teacher/grade?class_subject=${a.class_subject_id}&classroom=${a.classroom_id}`}>
+                <Link className="px-2 py-1 rounded border disabled:opacity-50"
+                      to={`/teacher/grade?class_subject=${classSubjectId}&classroom=${classroomId}`}
+                >
                   Open
                 </Link>
               </td>
             </tr>
-          ))}
+          )})}
           {!list.length && <tr><td className="p-3 text-sm text-gray-500" colSpan={4}>No assignments yet.</td></tr>}
         </tbody>
       </table>

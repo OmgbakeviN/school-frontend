@@ -13,6 +13,7 @@ export default function RegistrarHome(){
           <NavLink to="classes" className={active}>Classes & Coefs</NavLink>
           <NavLink to="students" className={active}>Students</NavLink>
           <NavLink to="enrollments" className={active}>Enrollments</NavLink>
+          <NavLink to="teachers" className={active}>Teachers</NavLink>
         </nav>
       </aside>
       <main className="p-6"><Outlet/></main>

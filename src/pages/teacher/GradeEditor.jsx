@@ -21,6 +21,8 @@ export default function GradeEditor() {
   const [enrollmentSubjects, setEnrollmentSubjects] = useState([]); // ES filtrés sur CE class_subject
   const [scores, setScores] = useState(new Map());                  // Map<enrollment_subject_id, number>
 
+  const [canEdit, setCanEdit] = useState(false);
+
   // 🔎 validations initiales
   if (!classSubjectId || !classroomId) {
     return (
@@ -47,7 +49,7 @@ export default function GradeEditor() {
 
         // charge les terms de l'année de la classe
         const { data: termsResp } = await api.get("/api/core/terms/", { params: { year: cls.data.year } });
-        const sorted = [...termsResp].sort((a,b)=>a.index-b.index);
+        const sorted = [...termsResp].sort((a, b) => a.index - b.index);
         setTerms(sorted);
         setTermId(sorted[0]?.id || null);
       } catch (e) {
@@ -57,6 +59,23 @@ export default function GradeEditor() {
     }
     bootMeta();
   }, [classroomId, classSubjectId]);
+
+  // 1b) Charger mon assignment pour cette matière pour savoir si je peux éditer
+  useEffect(() => {
+    async function loadPermission() {
+      try {
+        const { data } = await api.get("/api/portal/assignments/my/");
+        const hit = (data || []).find(
+          a => (a.class_subject_id ?? a.class_subject) === classSubjectId
+        );
+        setCanEdit(Boolean(hit?.can_edit));
+      } catch (e) {
+        console.warn("Cannot load my assignments, fallback canEdit=true");
+        setCanEdit(true);
+      }
+    }
+    loadPermission();
+  }, [classSubjectId]);
 
   // 2) Charge roster + ES de CE cours (évite Subject mismatch)
   useEffect(() => {
@@ -137,6 +156,7 @@ export default function GradeEditor() {
   // Save d'une valeur (autosave onBlur)
   const saveOne = async (esId, rawValue) => {
     if (!assessmentId || !esId) return;
+    if (!canEdit) { alert("You have read-only access for this subject."); return; }
     const trimmed = String(rawValue ?? "").trim();
     if (trimmed === "") return; // on ne supprime pas via vide; on ignore
 
@@ -151,7 +171,13 @@ export default function GradeEditor() {
         assessment: assessmentId,
         entries: [{ enrollment_subject: esId, value: num }]
       };
-      const { data } = await api.post("/api/scores/bulk/", payload);
+      const { data } = await api.post("/api/scores/bulk/", payload).catch(err => {
+        if (err?.response?.status === 403) {
+          alert("Not allowed to edit scores for this class/subject.");
+          return Promise.reject(err);
+        }
+        return Promise.reject(err);
+      });
       // debug: si skipped -> avertir
       if (data?.skipped?.length) {
         console.warn("Skipped:", data.skipped);
@@ -177,6 +203,11 @@ export default function GradeEditor() {
             Class: <span className="font-medium">{classroom?.name || `#${classroomId}`}</span>
             {" · "}Subject: <span className="font-medium">{subjectLabel || `#${classSubjectId}`}</span>
           </p>
+          {!canEdit && (
+            <p className="mt-2 text-sm text-orange-700 bg-orange-50 border border-orange-200 rounded px-2 py-1 inline-block">
+              Read-only: you cannot edit scores for this subject.
+            </p>
+          )}
         </div>
       </div>
 
@@ -231,6 +262,7 @@ export default function GradeEditor() {
                     <input
                       className="border p-1 rounded w-20 text-center"
                       defaultValue={value}
+                      disabled={!canEdit}
                       onBlur={(ev) => saveOne(esId, ev.target.value)}
                     />
                   ) : (
